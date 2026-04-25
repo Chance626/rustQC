@@ -13,11 +13,5 @@ based on those instructions.
 mod file_input;
 
 fn main() {
-
-    println!("I'm in main.");
-
-    file_input::read_input();
-
-    println!("I'm done in main.");
-
+    file_input::read_input("/users/PAS0291/cbrandt/tests/rust/rustQC/input.inp".to_string());
 }
