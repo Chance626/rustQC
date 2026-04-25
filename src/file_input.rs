@@ -6,13 +6,36 @@ and default values for the rest of the run. Largely controls the
 initialization of the run.
 */
 
-pub fn read_input() {
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+
+pub fn read_input(filepath: String) {
     // Reads and stores the input setting portion of the input settings
     // section and stores them for future use in the program.
 
-    println!("Starting in read_input().");
+
+    read_sections(filepath);
+
     read_geometry();
-    println!("Ending in read_input().");
+
+}
+
+fn read_sections(filepath: String) {
+    // Error handling for the file open
+    let file = match File::open(filepath.clone()) {
+        Ok(f) => f,
+        Err(e) => {
+            eprint!("{e} for the file: {filepath}");
+            return;
+        }
+    };
+    let reader = BufReader::new(file);
+
+    //reader.lines() exists within 
+    for cur_line in reader.lines() {
+        // janked the error handling for once in the file
+        println!("{}", cur_line.unwrap());
+    }
 
 }
 
@@ -24,3 +47,4 @@ pub fn read_geometry() {
     println!("Hello from read_geometry().");
 
 }
+
