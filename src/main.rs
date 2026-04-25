@@ -14,4 +14,5 @@ mod file_input;
 
 fn main() {
     file_input::read_input("/users/PAS0291/cbrandt/tests/rust/rustQC/input.inp".to_string());
+
 }
