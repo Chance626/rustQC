@@ -11,8 +11,11 @@ based on those instructions.
 */
 
 mod file_input;
+mod cli;
 
 fn main() {
+
+    cli::get_arguments();
     file_input::read_input("/users/PAS0291/cbrandt/tests/rust/rustQC/input.inp".to_string());
 
 }
