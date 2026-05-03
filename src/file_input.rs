@@ -10,23 +10,29 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 
-pub fn read_input(filepath: String) -> i8 {
-    // Reads and stores the input setting portion of the input settings
-    // section and stores them for future use in the program.
+use crate::molecule;
 
+pub fn read_input(filepath: &str) -> Result<(HashMap<String, String>,
+                                               molecule::Molecule), String> {
+    /* 
+    Reads and stores the input setting portion of the input settings
+    section and stores them for future use in the program.
+    */
 
     let section_info: HashMap<String, String> = read_sections(filepath);
 
-    for (k, v) in section_info.iter() {
-        println!("{} contains:\n{}", k, v)
-    }
+    //for (k, v) in section_info.iter() {
+    //    println!("{} contains:\n{}", k, v)
+    //}
 
-    read_geometry();
+    let geom_name = String::from("geom");
+    let mol: molecule::Molecule = read_geometry(section_info.get(&geom_name)
+    .expect("Cannot read geom section."))?;
 
-    return 0;
+    Ok((section_info, mol))
 }
 
-fn read_sections(filepath: String) -> HashMap<String, String> {
+fn read_sections(filepath: &str) -> HashMap<String, String> {
     /*
     Gets each section of the input file from the '%string' character to the next
     '%end', all information will be saved in a hashmap with the key of 'string'
@@ -40,7 +46,7 @@ fn read_sections(filepath: String) -> HashMap<String, String> {
     let mut sections = HashMap::new();
     
     // Error handling for the file open
-    let file = match File::open(filepath.clone()) {
+    let file = match File::open(filepath) {
         Ok(f) => f,
         Err(e) => {
             eprint!("{e} for the file: {filepath}");
@@ -80,14 +86,45 @@ fn read_sections(filepath: String) -> HashMap<String, String> {
     return sections;
 }
 
-pub fn read_geometry() {
+fn read_geometry(geom: &str) -> Result<molecule::Molecule, String> {
     /*
     Reads and stores the geometry portion of the input file or
     the specified geometry file. Currently can accept:
-    .xyz
+    - geom input sections
      */
 
-    println!("Hello from read_geometry().");
+    let geom_lines: Vec<&str> = geom.lines().collect();
+    let natoms: u32 = (geom_lines.len() - 1) as u32;
+    
+    let chrg_mult_line: Vec<&str> = geom_lines[0].split_whitespace().collect();
+    let chrg: i8 = chrg_mult_line[0].parse()
+    .map_err(|_| "Cannot read charge value")?;
+    let mult: i8 = chrg_mult_line[1].parse()
+    .map_err(|_| "Cannot read multiplicity value")?;
+    let mut eles: Vec<u8> = vec![0; natoms as usize];
+    let mut coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0]; natoms as usize];
 
+    for i in 0..(geom_lines.len() - 1) {
+        let cur_line: Vec<&str> = geom_lines[i + 1].split_whitespace().collect();
+
+        let atom_num = molecule::ELEMENTS.get(cur_line[0])
+        .ok_or_else(|| format!("Cannot identify element {}", cur_line[0]))?;
+        
+        eles[i] = *atom_num;
+
+        for j in 0..3 {
+            let cur_coords: f64 = cur_line[j + 1].parse()
+            .map_err(|e| format!("Cannot interpret geometry coordinates {}", e))?;
+            coords[i][j] = cur_coords;
+        }
+    }
+
+
+    Ok(molecule::Molecule{
+        eles: eles,
+        coords: coords,
+        natoms: natoms,
+        chrg: chrg,
+        mult: mult
+    })
 }
-

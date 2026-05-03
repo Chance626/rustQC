@@ -12,10 +12,15 @@ based on those instructions.
 
 mod file_input;
 mod cli;
+mod molecule;
 
 fn main() {
 
-    cli::get_arguments();
-    file_input::read_input("/users/PAS0291/cbrandt/tests/rust/rustQC/input.inp".to_string());
+    let line_arg = cli::get_arguments().unwrap();
+    let initial_data = file_input::read_input(line_arg.in_file.to_str().expect("Cannot read input file")).expect("Error");
 
+    let section_info = initial_data.0;
+    let mol = initial_data.1;
+    
+    mol.print_molecule();
 }
