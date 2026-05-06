@@ -13,6 +13,8 @@ based on those instructions.
 mod file_input;
 mod cli;
 mod molecule;
+mod scf;
+mod print;
 
 fn main() {
 
