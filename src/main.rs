@@ -15,14 +15,17 @@ mod cli;
 mod molecule;
 mod scf;
 mod print;
+mod basis;
 
 fn main() {
 
     let line_arg = cli::get_arguments().unwrap();
-    let initial_data = file_input::read_input(line_arg.in_file.to_str().expect("Cannot read input file")).expect("Error");
+    let initial_data = file_input::read_input(line_arg.in_file.to_str()
+                                                .expect("Cannot read input file"))
+                                                .expect("Error in parsing geometry or input");
 
     let section_info = initial_data.0;
     let mol = initial_data.1;
     
-    mol.print_molecule();
+    mol.print();
 }

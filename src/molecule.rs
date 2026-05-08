@@ -83,7 +83,7 @@ pub static ELEMENTS_TO_STR: LazyLock<HashMap<u8, &'static str>> = LazyLock::new(
     ELEMENTS.iter().map(|(k, v)| (*v, *k)).collect()
 });
 
-pub struct Molecule {
+pub struct Geometry {
     pub eles: Vec<u8>,
     pub coords: Vec<[f64; 3]>,
     pub natoms: u32,
@@ -91,8 +91,8 @@ pub struct Molecule {
     pub mult: i8
 }
 
-impl Molecule {
-    pub fn print_molecule(&self) {
+impl Geometry {
+    pub fn print(&self) {
         let header = "> Molecular Geometry <";
         println!("{:=^48}\n", header);
         println!("charge: {}    multiplicity: {}\n", self.chrg, self.mult);

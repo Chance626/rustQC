@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use crate::molecule;
 
 pub fn read_input(filepath: &str) -> Result<(HashMap<String, String>,
-                                               molecule::Molecule), String> {
+                                               molecule::Geometry), String> {
     /* 
     Reads and stores the input setting portion of the input settings
     section and stores them for future use in the program.
@@ -26,7 +26,7 @@ pub fn read_input(filepath: &str) -> Result<(HashMap<String, String>,
     //}
 
     let geom_name = String::from("geom");
-    let mol: molecule::Molecule = read_geometry(section_info.get(&geom_name)
+    let mol: molecule::Geometry = read_geometry(section_info.get(&geom_name)
     .expect("Cannot read geom section."))?;
 
     Ok((section_info, mol))
@@ -86,7 +86,7 @@ fn read_sections(filepath: &str) -> HashMap<String, String> {
     return sections;
 }
 
-fn read_geometry(geom: &str) -> Result<molecule::Molecule, String> {
+fn read_geometry(geom: &str) -> Result<molecule::Geometry, String> {
     /*
     Reads and stores the geometry portion of the input file or
     the specified geometry file. Currently can accept:
@@ -120,7 +120,7 @@ fn read_geometry(geom: &str) -> Result<molecule::Molecule, String> {
     }
 
 
-    Ok(molecule::Molecule{
+    Ok(molecule::Geometry{
         eles: eles,
         coords: coords,
         natoms: natoms,
