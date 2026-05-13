@@ -104,5 +104,6 @@ impl Geometry {
                     self.coords[i][1],
                     self.coords[i][2]);
         }
+        println!("{:=^48}\n", "");
     }
 }
