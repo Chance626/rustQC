@@ -31,5 +31,6 @@ fn main() {
     
     mol.print();
 
-    basis::load_basis(mol, "STO3G.json");
+    let mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
+    mol_basis.print();
 }

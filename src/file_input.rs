@@ -94,15 +94,15 @@ fn read_geometry(geom: &str) -> Result<molecule::Geometry, String> {
      */
 
     let geom_lines: Vec<&str> = geom.lines().collect();
-    let natoms: u32 = (geom_lines.len() - 1) as u32;
+    let natoms: usize = geom_lines.len() - 1;
     
     let chrg_mult_line: Vec<&str> = geom_lines[0].split_whitespace().collect();
     let chrg: i8 = chrg_mult_line[0].parse()
     .map_err(|_| "Cannot read charge value")?;
     let mult: i8 = chrg_mult_line[1].parse()
     .map_err(|_| "Cannot read multiplicity value")?;
-    let mut eles: Vec<u8> = vec![0; natoms as usize];
-    let mut coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0]; natoms as usize];
+    let mut eles: Vec<u8> = vec![0; natoms];
+    let mut coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0]; natoms];
 
     for i in 0..(geom_lines.len() - 1) {
         let cur_line: Vec<&str> = geom_lines[i + 1].split_whitespace().collect();

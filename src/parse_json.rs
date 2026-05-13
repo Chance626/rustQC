@@ -19,19 +19,19 @@ pub struct json_basis {
 }
 
 #[derive(Deserialize, Debug)]
-struct molssi_bse_schema {
+pub struct molssi_bse_schema {
     pub schema_type: String,
     pub schema_version: String
 }
 
 #[derive(Deserialize, Debug)]
-struct elements {
+pub struct elements {
     pub electron_shells: Vec<electron_shell>,
     pub references: Vec<reference>,
 }
 
 #[derive(Deserialize, Debug)]
-struct electron_shell {
+pub struct electron_shell {
     pub function_type: String,
     pub region: String,
     pub angular_momentum: Vec<usize>,
@@ -44,7 +44,7 @@ struct electron_shell {
 }
 
 #[derive(Deserialize, Debug)]
-struct reference {
+pub struct reference {
     pub reference_description: String,
     pub reference_keys: Vec<String>
 }
@@ -122,6 +122,7 @@ where
 }
 
 // ordering operators for the electron_shells
+// made these for a print statement, but like... didn't need to...
 
 impl PartialEq for electron_shell {
     fn eq(&self, other: &Self) -> bool {
@@ -173,7 +174,6 @@ impl Ord for electron_shell {
                         }
                     }
                 }
-
                 Ordering::Equal
             })
         })
