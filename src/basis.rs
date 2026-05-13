@@ -6,6 +6,10 @@ functions from the ../basis/ objects and then structuring them into rust usable
 objects.
 */
 
+use std::fs;
+use crate::{molecule, parse_json};
+
+
 #[inline]
 pub fn index_of(i: usize, j: usize) -> usize {
     /*
@@ -46,6 +50,8 @@ pub struct ContractedShell {
     pub ao_offset: usize
 }
 
+
+
 impl BasisSet{
     pub fn normalize(&mut self) {
         // TODO: Add normalization
@@ -67,4 +73,18 @@ impl ContractedShell {
                 2 * self.l + 1,
         }
     }
+}
+
+pub fn load_basis (geom: molecule::Geometry, basis_name: &str) -> BasisSet {
+    let base_path = std::env!("CARGO_MANIFEST_DIR");
+    let basis_path = &format!("{base_path}/basis/{basis_name}");
+    let contents = &fs::read_to_string(basis_path).unwrap();
+
+    // println!("{}", contents);
+
+    let ele_basis_sets: parse_json::json_basis = serde_json::from_str(contents).unwrap();
+
+    ele_basis_sets.print();
+
+    return BasisSet { shells: Vec::new(), prim_coeffs: Vec::new(), prim_exp: Vec::new() }
 }

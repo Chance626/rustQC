@@ -16,6 +16,8 @@ mod molecule;
 mod scf;
 mod print;
 mod basis;
+mod parse_json;
+// mod context;
 
 fn main() {
 
@@ -28,4 +30,6 @@ fn main() {
     let mol = initial_data.1;
     
     mol.print();
+
+    basis::load_basis(mol, "STO3G.json");
 }
