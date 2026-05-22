@@ -1,3 +1,4 @@
+
 /*
 Chance Brandt, The Ohio State 2026
 
@@ -17,6 +18,7 @@ mod scf;
 mod print;
 mod basis;
 mod parse_json;
+mod util;
 // mod context;
 
 fn main() {
@@ -33,6 +35,6 @@ fn main() {
 
     let mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
     mol_basis.print();
-
+    mol_basis.get_prim_norms();
     // run the method of the input file
 }

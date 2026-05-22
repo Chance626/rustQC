@@ -5,6 +5,7 @@ These are functions to help deserialize json files to load data into the runtime
 */
 
 use serde::{Deserialize, Deserializer};
+use core::num;
 use std::collections::HashMap;
 use std::cmp::Ordering;
 
@@ -95,6 +96,28 @@ impl json_basis {
     }
 }
 
+impl electron_shell {
+    pub fn get_num_ao(&self) -> usize {
+        let mut num_ao: usize = 0;
+
+        let gto:String = "gto".to_string();
+        let gto_spherical: String = "gto_spherical".to_string();
+        for ang in self.angular_momentum.iter() {
+
+            let degeneracy = match self.function_type.as_str() {
+                gto =>
+                    (ang + 1) * (ang + 2) / 2,
+                
+                gto_spherical =>
+                    2 * ang + 1,
+            };
+
+            num_ao += degeneracy * self.exponents.len();
+        }
+
+        return num_ao;
+    }
+}
 
 // Helper functions to parse the JSON formatted basis sets from BasisSetExchange
 

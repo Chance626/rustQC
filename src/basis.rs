@@ -6,19 +6,11 @@ functions from the ../basis/ objects and then structuring them into rust usable
 objects.
 */
 
-use std::fs;
+use std::{f64::consts::PI, fs};
 use crate::{molecule, parse_json};
 use std::cmp::{PartialEq, Eq};
-
-
-#[inline]
-pub fn index_of(i: usize, j: usize) -> usize {
-    /*
-    Get's lower triangle matrix index of the ith and jth element
-     */
-    let (a, b) = if i > j {(i, j)} else {(j, i)};
-    ( a * (a + 1) / 2) + b
-}
+use faer::{self, traits::math_utils::sqrt};
+use crate::scf::integral_solver::single_integral;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum BasisType {
@@ -57,7 +49,33 @@ pub struct ContractedShell {
 
 impl BasisSet{
     pub fn normalize(&mut self) {
-        // TODO: Add normalization
+        // This normalizes all the coefficients
+
+    }
+
+    pub fn get_prim_norms(&self) -> Vec<f64> {
+
+        let mut sum_prim = 0;
+
+        for shell in self.shells.iter() {
+            sum_prim += shell.prim_num;
+        }
+
+        let mut norms: Vec<f64> = vec![0.0; sum_prim];
+        let mut count = 0;
+        for shell in self.shells.iter() {
+            for i in 0..shell.prim_num {
+                let cur_coef = self.prim_coeffs[shell.coeff_offset + i];
+                let cur_exp = self.prim_exp[shell.exp_offset + i];
+                let cur_overlap = single_integral(shell.l, cur_exp, cur_coef);
+                // ensures that the norms and exps are indexed the same
+                norms[shell.exp_offset + i] = (1.0 / cur_overlap);
+                count += 1;
+            }
+        }
+
+        let norms = norms;
+        return norms;
     }
 
     pub fn print(&self) {
@@ -81,12 +99,12 @@ impl BasisSet{
                 );
             }
         }
-
         println!("{:=^48}\n", "");
     }
 }
 
 impl ContractedShell {
+
     #[inline]
     pub fn get_num_ao(&self) -> usize {
         match self.gauss_type {

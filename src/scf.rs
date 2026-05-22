@@ -10,4 +10,4 @@ Sets and Molecular Integrals"
 
 */
 
-mod integral_solver;
+pub mod integral_solver;
