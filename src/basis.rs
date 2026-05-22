@@ -50,6 +50,28 @@ pub struct ContractedShell {
 impl BasisSet{
     pub fn normalize(&mut self) {
         // This normalizes all the coefficients
+        self.normalize_primitives();
+        self.normalize_contracted();
+    }
+
+    fn normalize_primitives(&mut self) {
+        let prim_norms = self.get_prim_norms();
+
+
+        for shell in self.shells.iter() {
+            for i in 0..shell.prim_num {
+                let coeff_idx = shell.coeff_offset + i;
+                let cur_coef = self.prim_coeffs[coeff_idx];
+                let cur_norm = prim_norms[coeff_idx];
+                self.prim_coeffs[coeff_idx] = cur_coef * cur_norm;
+            }
+        }
+
+
+
+    }
+
+    fn normalize_contracted(&mut self) {
 
     }
 
@@ -62,15 +84,13 @@ impl BasisSet{
         }
 
         let mut norms: Vec<f64> = vec![0.0; sum_prim];
-        let mut count = 0;
         for shell in self.shells.iter() {
             for i in 0..shell.prim_num {
                 let cur_coef = self.prim_coeffs[shell.coeff_offset + i];
                 let cur_exp = self.prim_exp[shell.exp_offset + i];
                 let cur_overlap = single_integral(shell.l, cur_exp, cur_coef);
                 // ensures that the norms and exps are indexed the same
-                norms[shell.exp_offset + i] = (1.0 / cur_overlap);
-                count += 1;
+                norms[shell.coeff_offset + i] = sqrt(&(1.0 / cur_overlap));
             }
         }
 

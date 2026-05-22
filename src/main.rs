@@ -33,8 +33,12 @@ fn main() {
     
     mol.print();
 
-    let mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
+    // need to perform operations on the basis before leaving it alone for the 
+    // rest of the run, should abstract at some point
+    let mut mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
     mol_basis.print();
-    mol_basis.get_prim_norms();
+    mol_basis.normalize();
+
+    let mol_basis = mol_basis;
     // run the method of the input file
 }
