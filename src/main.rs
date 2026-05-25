@@ -38,6 +38,7 @@ fn main() {
     let mut mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
     mol_basis.print();
     mol_basis.normalize();
+    mol_basis.print();
 
     let mol_basis = mol_basis;
     // run the method of the input file
