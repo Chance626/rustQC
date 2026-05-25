@@ -11,7 +11,7 @@ use std::{f64::consts::PI, fs};
 use crate::{molecule, parse_json};
 use std::cmp::{PartialEq, Eq};
 use faer::{self, traits::math_utils::sqrt};
-use crate::scf::integral_solver::single_integral;
+use crate::scf::integral_solver::self_integral;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum BasisType {
@@ -26,7 +26,9 @@ pub struct BasisSet {
     pub shells: Vec<ContractedShell>,
 
     pub prim_coeffs: Vec<f64>,
-    pub prim_exp: Vec<f64>
+    pub prim_exp: Vec<f64>,
+
+    pub total_aos: usize
 }
 
 #[repr(C)]
@@ -35,10 +37,8 @@ pub struct ContractedShell {
     pub l: usize, // Angular Momentum
     pub functions: Vec<PrimitiveFunction>,
     
-    // before account for permutations of ang, this existed here
-    pub prim_num: usize, // Number of primitives in the contraction
+    pub prim_num: usize, // contraction depth
 
-    // How to get the correct coords from a Geometry
     pub ele_offset: usize, // displacement from the start of Geometry.eles
 
     // easy indexing to AO representation
@@ -60,7 +60,7 @@ pub struct PrimitiveFunction {
 impl BasisSet{
     pub fn normalize(&mut self) {
         // This normalizes all the coefficients
-        //self.normalize_primitives();
+        self.normalize_primitives();
         self.normalize_contracted();
     }
 
@@ -70,11 +70,19 @@ impl BasisSet{
         // or higher
         let prim_norms = self.get_prim_norms();
         for shell in self.shells.iter() {
-            for i in 0..shell.prim_num {
-                //let coeff_idx = shell.coeff_offset + i;
-                //let cur_coef = self.prim_coeffs[coeff_idx];
-                //let cur_norm = prim_norms[coeff_idx];
-                //self.prim_coeffs[coeff_idx] = cur_coef * cur_norm;
+            for primitive in shell.functions.iter() {
+                for i in 0..shell.prim_num {
+                    let coeff_idx = primitive.coeff_offset + i;
+                    let cur_coef = self.prim_coeffs[coeff_idx];
+                    let cur_norm = prim_norms[coeff_idx];
+                    self.prim_coeffs[coeff_idx] = cur_coef * cur_norm;
+                    let cur_overlap = self_integral(
+                        primitive.lx,
+                        primitive.ly,
+                        primitive.lz,
+                        self.prim_exp[primitive.exp_offset + i],
+                        self.prim_coeffs[coeff_idx]);
+                }
             }
         }
     }
@@ -84,21 +92,19 @@ impl BasisSet{
     }
 
     pub fn get_prim_norms(&self) -> Vec<f64> {
-
-        let mut sum_prim = 0;
-
+        let mut norms: Vec<f64> = vec![0.0; self.total_aos];
         for shell in self.shells.iter() {
-            sum_prim += shell.prim_num;
-        }
-
-        let mut norms: Vec<f64> = vec![0.0; sum_prim];
-        for shell in self.shells.iter() {
-            for i in 0..shell.prim_num {
-                //let cur_coef = self.prim_coeffs[shell.coeff_offset + i];
-                //let cur_exp = self.prim_exp[shell.exp_offset + i];
-                //let cur_overlap = single_integral(shell.l, cur_exp, cur_coef);
-                // ensures that the norms and coeffs are indexed the same
-                //norms[shell.coeff_offset + i] = sqrt(&(1.0 / cur_overlap));
+            for primitive in shell.functions.iter() {
+                for i in 0..shell.prim_num {
+                    let cur_coef = self.prim_coeffs[primitive.coeff_offset + i];
+                    let cur_exp = self.prim_exp[primitive.exp_offset + i];
+                    let cur_overlap = self_integral(
+                        primitive.lx,
+                        primitive.ly,
+                        primitive.lz,
+                        cur_exp,
+                        cur_coef);
+                }
             }
         }
         let norms = norms;
@@ -109,21 +115,20 @@ impl BasisSet{
         let header = "> Basis Sets <";
         println!("{:=^48}\n", header);
         for shell in self.shells.iter() {
-            println!("{:5}{:?} Shell for atom: {}, l = {}",
-            "",
+            println!("{:?} Shell for atom: {}, l = {}",
             shell.gauss_type,
             shell.ele_offset + 1,
             shell.l);
 
             for function in shell.functions.iter() {
-                println!("{:7}lx: {}, ly: {}, lz: {}",
+                println!("{:2}lx: {}, ly: {}, lz: {}",
                 "",
                 function.lx, function.ly, function.lz);
-                println!("{:9}Coefficients{:8}Exponents",
+                println!("{:4}Coefficients{:8}Exponents",
                 "",
                 "");
                 for i in 0..shell.prim_num {
-                    println!("{:11}{:<12.9}({:^5}){:2}{:<12.9}({:^5})",
+                    println!("{:6}{:>12.7} ({:^5}){:2}{:>12.7} ({:^5})",
                         "",
                         self.prim_coeffs[i + function.coeff_offset],
                         (i + function.coeff_offset).to_string(),
@@ -180,7 +185,7 @@ pub fn build_mol_basis (geom: &molecule::Geometry, ele_basis_sets: &parse_json::
     let mut coef_offset = 0 ;
     let mut exp_offset = 0 ;
     let mut ao_offset = 0 ;
-    let mut mol_basis = BasisSet { shells: Vec::new(), prim_coeffs: Vec::new(), prim_exp: Vec::new() };
+    let mut mol_basis = BasisSet { shells: Vec::new(), prim_coeffs: Vec::new(), prim_exp: Vec::new(), total_aos: 0 };
     
     for i in 0..geom.natoms {
         let cur_ele: u8 = geom.eles[i];
@@ -195,9 +200,9 @@ pub fn build_mol_basis (geom: &molecule::Geometry, ele_basis_sets: &parse_json::
                     // before account for permutations of ang, this existed here
                     // mol_basis.prim_coeffs.extend(shell.coefficients[*ang].iter().copied());
                     
-                    // Add inner loop here to account for each permutation of angular momentums for the basis sets, want num_prim = num_ao
                     let mut contracted_functions: Vec<PrimitiveFunction> = Vec::new();
 
+                    // Add inner loop here to account for each permutation of angular momentums for the basis sets
                     for lx in 0..(ang + 1) {
                         for ly in 0..(ang + 1 - lx) {
                             let lz = ang - lx - ly;
@@ -227,10 +232,9 @@ pub fn build_mol_basis (geom: &molecule::Geometry, ele_basis_sets: &parse_json::
                             ao_offset: ao_offset
                         };
                     
-                    let num_ao = cur_contract_shell.get_num_ao();
+                    let num_ao = cur_contract_shell.get_num_ao() * cur_contract_shell.prim_num;
                     cur_contract_shell.num_ao = num_ao;
-                    // before account for permutations of ang, this existed here
-                    // coef_offset += shell.coefficients[*ang].len();
+
                     // tracking where in the ao block the shell is
                     ao_offset += num_ao;
                     // immutable fixing
@@ -241,6 +245,8 @@ pub fn build_mol_basis (geom: &molecule::Geometry, ele_basis_sets: &parse_json::
             }
         }
     }
+
+    mol_basis.total_aos = ao_offset;
 
     let mol_basis = mol_basis;
     return mol_basis;
