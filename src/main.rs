@@ -36,7 +36,7 @@ fn main() {
     // need to perform operations on the basis before leaving it alone for the 
     // rest of the run, should abstract at some point
     let mut mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
-    mol_basis.print();
+    mol_basis.print(&mol);
     mol_basis.normalize();
     //mol_basis.print();
 

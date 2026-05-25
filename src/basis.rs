@@ -11,7 +11,10 @@ use std::{f64::consts::PI, fs};
 use crate::{molecule, parse_json};
 use std::cmp::{PartialEq, Eq};
 use faer::{self, traits::math_utils::sqrt};
-use crate::scf::integral_solver::self_integral;
+use crate::scf::integral_solver::{
+    one_center_one_gaussian_integral,
+    one_center_two_gaussian_integral};
+use factorial::DoubleFactorial;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum BasisType {
@@ -35,7 +38,7 @@ pub struct BasisSet {
 pub struct ContractedShell {
     pub gauss_type: BasisType, 
     pub l: usize, // Angular Momentum
-    pub functions: Vec<PrimitiveFunction>,
+    pub functions: Vec<ContractedFunction>,
     
     pub prim_num: usize, // contraction depth
 
@@ -46,7 +49,7 @@ pub struct ContractedShell {
     pub ao_offset: usize
 }
 
-pub struct PrimitiveFunction {    
+pub struct ContractedFunction {    
     // Angular momentum associate with this function
     pub lx: usize,
     pub ly: usize,
@@ -59,16 +62,13 @@ pub struct PrimitiveFunction {
 
 impl BasisSet{
     pub fn normalize(&mut self) {
-        // This normalizes all the coefficients
         self.normalize_primitives();
         self.normalize_contracted();
     }
 
-    fn normalize_primitives(&mut self) {
-        // currently only normalizes the total angular moment, need to normalize
-        // the combinations of possible angular momentum for each set where l=2
-        // or higher
+    pub fn normalize_primitives(&mut self) {
         let prim_norms = self.get_prim_norms();
+
         for shell in self.shells.iter() {
             for primitive in shell.functions.iter() {
                 for i in 0..shell.prim_num {
@@ -76,34 +76,43 @@ impl BasisSet{
                     let cur_coef = self.prim_coeffs[coeff_idx];
                     let cur_norm = prim_norms[coeff_idx];
                     self.prim_coeffs[coeff_idx] = cur_coef * cur_norm;
-                    let cur_overlap = self_integral(
-                        primitive.lx,
-                        primitive.ly,
-                        primitive.lz,
-                        self.prim_exp[primitive.exp_offset + i],
-                        self.prim_coeffs[coeff_idx]);
                 }
             }
         }
     }
 
-    fn normalize_contracted(&mut self) {
+    pub fn normalize_contracted(&mut self) {
+        let contract_norms = self.get_contract_norms();
 
+        for shell in self.shells.iter() {
+            for primitive in shell.functions.iter() {
+                for i in 0..shell.prim_num {
+                    let coeff_idx = primitive.coeff_offset + i;
+                    let cur_coef = self.prim_coeffs[coeff_idx];
+                    let cur_norm = contract_norms[coeff_idx];
+                    self.prim_coeffs[coeff_idx] = cur_coef * cur_norm;   
+                }
+            }
+        }
     }
 
-    pub fn get_prim_norms(&self) -> Vec<f64> {
+    fn get_prim_norms(&self) -> Vec<f64> {
+        /* From "Fundamentals of Molecular Integrals Evaluation" by
+                Justin T. Fermann and Edward F. Valeev */
         let mut norms: Vec<f64> = vec![0.0; self.total_aos];
         for shell in self.shells.iter() {
             for primitive in shell.functions.iter() {
                 for i in 0..shell.prim_num {
                     let cur_coef = self.prim_coeffs[primitive.coeff_offset + i];
                     let cur_exp = self.prim_exp[primitive.exp_offset + i];
-                    let cur_overlap = self_integral(
+                    let cur_overlap = one_center_one_gaussian_integral(
                         primitive.lx,
                         primitive.ly,
                         primitive.lz,
                         cur_exp,
                         cur_coef);
+                    // ensures norms and coeffs have the same index
+                    norms[primitive.coeff_offset + i] = sqrt(&(1.0 / cur_overlap));
                 }
             }
         }
@@ -111,12 +120,62 @@ impl BasisSet{
         return norms;
     }
 
-    pub fn print(&self) {
+    fn get_contract_norms(&self) -> Vec<f64> {
+        /* From "Fundamentals of Molecular Integrals Evaluation" by
+                Justin T. Fermann and Edward F. Valeev */
+
+        let mut norms: Vec<f64> = vec![0.0; self.total_aos];
+        for shell in self.shells.iter() {
+            for primitive in shell.functions.iter() {
+
+                let mut contracted_int_sum = 0.0;
+                for i in 0..shell.prim_num {
+                    let coeff1 = self.prim_coeffs[primitive.coeff_offset + i];
+                    let exp1 = self.prim_exp[primitive.exp_offset + i];
+                    for j in 0..shell.prim_num {
+                        let coeff2 = self.prim_coeffs[primitive.coeff_offset + j];
+                        let exp2 = self.prim_exp[primitive.exp_offset + j];
+                        contracted_int_sum += one_center_two_gaussian_integral(
+                            primitive.lx,
+                            primitive.ly, 
+                            primitive.lz, 
+                            exp1, 
+                            coeff1, 
+                            exp2, 
+                            coeff2);
+                    }
+                }
+
+                let a = if (primitive.lx > 0) {2 * primitive.lx - 1} else {1};
+                let b = if (primitive.ly > 0) {2 * primitive.ly - 1} else {1};
+                let c = if (primitive.lz > 0) {2 * primitive.lz - 1} else {1};
+                let prefactor =  (sqrt(&PI.powi(3)) * 
+                    (a.double_factorial() * 
+                    b.double_factorial() * 
+                    c.double_factorial()) as f64) / 
+                    ((2 as i32).pow((primitive.lx + primitive.ly + primitive.lz) as u32) as f64);
+                
+                let prim_function_norm = sqrt(&(1.0 / (prefactor * contracted_int_sum)));
+
+                for i in 0..shell.prim_num {
+                    norms[primitive.coeff_offset + i] = prim_function_norm;
+                }
+            }
+        }
+
+        let norms = norms;
+        return norms;
+    }
+
+    pub fn print(&self, mol: &molecule::Geometry) {
+        /*Prints basis information for the current BasisSet, requires
+        the Geometry to print the atom type */
         let header = "> Basis Sets <";
         println!("{:=^48}\n", header);
         for shell in self.shells.iter() {
-            println!("{:?} Shell for atom: {}, l = {}",
+            println!("{:?} Shell for atom: {}{}, l = {}",
             shell.gauss_type,
+            molecule::ELEMENTS_TO_STR[&mol.eles[shell.ele_offset]],
             shell.ele_offset + 1,
             shell.l);
 
@@ -200,15 +259,15 @@ pub fn build_mol_basis (geom: &molecule::Geometry, ele_basis_sets: &parse_json::
                     // before account for permutations of ang, this existed here
                     // mol_basis.prim_coeffs.extend(shell.coefficients[*ang].iter().copied());
                     
-                    let mut contracted_functions: Vec<PrimitiveFunction> = Vec::new();
+                    let mut contracted_functions: Vec<ContractedFunction> = Vec::new();
 
                     // Add inner loop here to account for each permutation of angular momentums for the basis sets
                     for lx in 0..(ang + 1) {
                         for ly in 0..(ang + 1 - lx) {
                             let lz = ang - lx - ly;
                             mol_basis.prim_coeffs.extend(shell.coefficients[*ang].iter().copied());
-                            let cur_primitive: PrimitiveFunction = 
-                                PrimitiveFunction { 
+                            let cur_primitive: ContractedFunction = 
+                                ContractedFunction { 
                                     lx: lx,
                                     ly: ly,
                                     lz: lz,
