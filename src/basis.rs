@@ -62,9 +62,8 @@ pub struct ContractedFunction {
 
 impl BasisSet{
     pub fn normalize(&mut self) {
-
         //self.print_primtive_self_overlap("Primitive Self Overlap Before Normalization");
-        //self.print_contracted_self_overlap("Contracted Self Overlap Before Primitive Normalization");
+        //self.print_contracted_self_overlap("Contracted Self Overlap Before Normalization");
 
         self.normalize_primitives();
 

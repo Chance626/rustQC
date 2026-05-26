@@ -14,6 +14,8 @@ TODOs:
 
     - Print levels for handing different checks/debugging
         - Should come up with a scheme for what infor should be at each print level
+
+    - Have defaults for all options? Could be tied in with the input variable obj
 */
 
 mod file_input;
@@ -34,14 +36,11 @@ fn main() {
                                                 .expect("Error in parsing geometry or input");
 
     // Should consider making this a callable object for easier handling throughout
-    // runs
     let section_info = initial_data.0;
     let mol = initial_data.1;
     
     mol.print();
 
-    // This can print the normalization information from the basis sets, need to add
-    // settings for 
     let mut mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
 
     let mol_basis = mol_basis;
