@@ -9,6 +9,11 @@ possible.
 This is the main file used to orchestrate the rest of the program. It
 starts with reading an input file and geometry file, and executing 
 based on those instructions.
+
+TODOs:
+
+    - Print levels for handing different checks/debugging
+        - Should come up with a scheme for what infor should be at each print level
 */
 
 mod file_input;
@@ -28,17 +33,16 @@ fn main() {
                                                 .expect("Cannot read input file"))
                                                 .expect("Error in parsing geometry or input");
 
+    // Should consider making this a callable object for easier handling throughout
+    // runs
     let section_info = initial_data.0;
     let mol = initial_data.1;
     
     mol.print();
 
-    // need to perform operations on the basis before leaving it alone for the 
-    // rest of the run, should abstract at some point
+    // This can print the normalization information from the basis sets, need to add
+    // settings for 
     let mut mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
-    mol_basis.print(&mol);
-    mol_basis.normalize();
-    //mol_basis.print();
 
     let mol_basis = mol_basis;
     // run the method of the input file

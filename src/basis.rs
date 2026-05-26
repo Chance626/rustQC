@@ -7,7 +7,7 @@ objects.
 */
 
 use core::num;
-use std::{f64::consts::PI, fs};
+use std::{f64::consts::PI, fs, primitive};
 use crate::{molecule, parse_json};
 use std::cmp::{PartialEq, Eq};
 use faer::{self, traits::math_utils::sqrt};
@@ -62,8 +62,19 @@ pub struct ContractedFunction {
 
 impl BasisSet{
     pub fn normalize(&mut self) {
+
+        //self.print_primtive_self_overlap("Primitive Self Overlap Before Normalization");
+        //self.print_contracted_self_overlap("Contracted Self Overlap Before Primitive Normalization");
+
         self.normalize_primitives();
+
+        //self.print_primtive_self_overlap("Primitive Self Overlap After Primitive Normalization");
+        //self.print_contracted_self_overlap("Contracted Self Overlap After Primitive Normalization");
+
         self.normalize_contracted();
+
+        //self.print_primtive_self_overlap("Primitive Self Overlap After Contracted Normalization");
+        //self.print_contracted_self_overlap("Contracted Self Overlap After Contracted Normalization");
     }
 
     pub fn normalize_primitives(&mut self) {
@@ -79,6 +90,8 @@ impl BasisSet{
                 }
             }
         }
+
+        // Print Statements to Check Self-Overlap After Normalization
     }
 
     pub fn normalize_contracted(&mut self) {
@@ -200,6 +213,65 @@ impl BasisSet{
         }
         println!("{:=^48}\n", "");
     }
+
+    fn print_primtive_self_overlap(&self, title: &str) {
+        println!("\n{}", title);
+        for shell in self.shells.iter() {
+            for primitive in shell.functions.iter() {
+                for i in 0..shell.prim_num {
+                    let coeff_idx = primitive.coeff_offset + i;
+                    let exp_idx = primitive.exp_offset + i;
+
+                    let cur_overlap = one_center_one_gaussian_integral(
+                        primitive.lx, 
+                        primitive.ly, 
+                        primitive.lz, 
+                        self.prim_exp[exp_idx], 
+                        self.prim_coeffs[coeff_idx]);
+
+                    println!("({:^5}) {:<12.8}", (coeff_idx + 1).to_string(), cur_overlap.to_string());
+                }
+            }
+        }
+    }
+
+    fn print_contracted_self_overlap(&self, title: &str) {
+        println!("\n{}", title);
+        let mut count = 1;
+        for shell in self.shells.iter() {
+            for primitive in shell.functions.iter() {
+                let mut contracted_int_sum = 0.0;
+                for i in 0..shell.prim_num {
+                    let coeff1 = self.prim_coeffs[primitive.coeff_offset + i];
+                    let exp1 = self.prim_exp[primitive.exp_offset + i];
+                    for j in 0..shell.prim_num {
+                        let coeff2 = self.prim_coeffs[primitive.coeff_offset + j];
+                        let exp2 = self.prim_exp[primitive.exp_offset + j];
+                        contracted_int_sum += one_center_two_gaussian_integral(
+                            primitive.lx,
+                            primitive.ly, 
+                            primitive.lz, 
+                            exp1, 
+                            coeff1, 
+                            exp2, 
+                            coeff2);
+                    }
+                }
+                let a = if (primitive.lx > 0) {2 * primitive.lx - 1} else {1};
+                let b = if (primitive.ly > 0) {2 * primitive.ly - 1} else {1};
+                let c = if (primitive.lz > 0) {2 * primitive.lz - 1} else {1};
+                let prefactor =  (sqrt(&PI.powi(3)) * 
+                    (a.double_factorial() * 
+                    b.double_factorial() * 
+                    c.double_factorial()) as f64) / 
+                    ((2 as i32).pow((primitive.lx + primitive.ly + primitive.lz) as u32) as f64);
+
+                let contract_shell_overlap = prefactor * contracted_int_sum;
+                println!("({:^5}) {:<12.8}", count.to_string(), contract_shell_overlap.to_string());
+                count += 1;
+            }
+        }
+    }
 }
 
 impl ContractedShell {
@@ -216,7 +288,7 @@ impl ContractedShell {
     }
 }
 
-pub fn load_basis (geom: &molecule::Geometry, basis_name: &str) -> BasisSet {
+pub fn load_basis (mol: &molecule::Geometry, basis_name: &str) -> BasisSet {
     /* This function is responsible for loading the basis information from the stored
     basis information as well as the molecular geometry to make sure that all the atoms
     have the apropriate cartesian gaussians
@@ -230,9 +302,14 @@ pub fn load_basis (geom: &molecule::Geometry, basis_name: &str) -> BasisSet {
 
     let ele_basis_sets: parse_json::json_basis = serde_json::from_str(contents).unwrap();
 
-    let mol_basis: BasisSet = build_mol_basis(&geom, &ele_basis_sets, BasisType::Cartesian);
+    let mut mol_basis: BasisSet = build_mol_basis(&mol, &ele_basis_sets, BasisType::Cartesian);
 
-    // TODO: add normalization here
+    // Normalization - Does the primitive gaussians and then the contracted
+    mol_basis.print(&mol);
+    mol_basis.normalize();
+
+    // Recasting for immutable
+    let mol_basis = mol_basis;
 
     return mol_basis;
 }
