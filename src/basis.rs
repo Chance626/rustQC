@@ -36,7 +36,7 @@ pub struct BasisSet {
 
 #[repr(C)]
 pub struct ContractedShell {
-    pub gauss_type: BasisType, 
+    pub gauss_type: BasisType,
     pub l: usize, // Angular Momentum
     pub functions: Vec<ContractedFunction>,
     
@@ -304,8 +304,8 @@ pub fn load_basis (mol: &molecule::Geometry, basis_name: &str) -> BasisSet {
     let mut mol_basis: BasisSet = build_mol_basis(&mol, &ele_basis_sets, BasisType::Cartesian);
 
     // Normalization - Does the primitive gaussians and then the contracted
-    mol_basis.print(&mol);
     mol_basis.normalize();
+    mol_basis.print(&mol);
 
     // Recasting for immutable
     let mol_basis = mol_basis;
@@ -366,12 +366,12 @@ pub fn build_mol_basis (geom: &molecule::Geometry, ele_basis_sets: &parse_json::
                             num_ao: 0,
                             ao_offset: ao_offset
                         };
-                    
-                    let num_ao = cur_contract_shell.get_num_ao() * cur_contract_shell.prim_num;
-                    cur_contract_shell.num_ao = num_ao;
+                    // deleted the times prim num to just get the number of contracted AOs present 
+                    //let num_ao = cur_contract_shell.get_num_ao() * cur_contract_shell.prim_num;
+                    cur_contract_shell.num_ao = cur_contract_shell.get_num_ao();
 
                     // tracking where in the ao block the shell is
-                    ao_offset += num_ao;
+                    ao_offset += cur_contract_shell.num_ao;
                     // immutable fixing
                     let cur_contract_shell = cur_contract_shell;
                     mol_basis.shells.push(cur_contract_shell);

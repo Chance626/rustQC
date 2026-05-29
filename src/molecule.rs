@@ -7,6 +7,8 @@ Structure to store molecular information
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
+use faer::traits::math_utils::sqrt;
+
 pub static ELEMENTS: LazyLock<HashMap<&'static str, u8>> = LazyLock::new(|| {
     let mut m = HashMap::new();
 
@@ -106,4 +108,17 @@ impl Geometry {
         }
         println!("{:=^48}\n", "");
     }
+}
+
+/*
+Geometry Util Functions
+*/
+
+#[inline]
+pub fn get_cart_distance(loca: &[f64; 3], locb: &[f64; 3]) -> f64 {
+    let mut square_sum = 0.0;
+    for i in 0..3 {
+        square_sum += (loca[i] - locb[i]).powi(2);
+    }
+    return sqrt(&square_sum);
 }

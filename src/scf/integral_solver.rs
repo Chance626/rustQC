@@ -9,11 +9,111 @@ Let see how this goes lol
 use std::f64::consts::PI;
 use factorial::DoubleFactorial;
 use faer::traits::math_utils::sqrt;
+use faer::Mat;
+use crate::basis::{BasisSet, ContractedFunction};
+use crate::molecule::Geometry;
 
 #[inline]
-pub fn E() {
-    /* Gets the expansion coefficients for Hermite polynomials recursively*/
+pub fn hermite_coefficients(anga: &usize, expa: &f64, angb: &usize, expb: &f64, dist: &f64, nodes: &i8) -> f64 {
+    /* Gets the expansion coefficients for Hermite polynomials recursively
+    From Joshua Goings: https://joshuagoings.com/2017/04/28/integrals/
     
+    anga/angb - orital angular momentum number of Gassian 'a' and 'b'
+    expa/expb - orbital expontent on Gaussian 'a' and 'b'
+    dist - distance between 
+    
+    TODO - make this not recursive so you can inline this shit
+    */
+    let p = expa + expb;
+    let q = (expa * expb) / (p);
+
+    if (*nodes < 0 || *nodes > (*anga + *angb) as i8) {
+        // out of bounds
+        return 0.0;
+    } else if (*anga == 0 && *angb == 0 && *nodes == 0) {
+        // base case
+        return (-1.0 * q * dist * dist).exp();
+    } else if *angb == 0 {
+        // decrement index a
+        return (1.0/(2.0*p)) * hermite_coefficients(&(anga - 1), &expa, &angb, &expb, &dist, &(nodes - 1)) - 
+                ((q * dist) / expa) * hermite_coefficients(&(anga - 1), &expa, &angb, &expb, &dist, &nodes) + 
+                ((nodes + 1) as f64) * hermite_coefficients(&(anga - 1), &expa, &angb, &expb, &dist, &(nodes + 1));
+    } else {
+        // decrement index b
+        return (1.0/(2.0*p)) * hermite_coefficients(&anga, &expa, &(angb - 1), &expb, &dist, &(nodes - 1)) + 
+                ((q * dist) / expb) * hermite_coefficients(&anga, &expa, &(angb - 1), &expb, &dist, &nodes) + 
+                ((nodes + 1) as f64) * hermite_coefficients(&anga, &expa, &(angb - 1), &expb, &dist, &(nodes + 1));
+
+    }
+}
+
+pub fn hermite_overlap(expa: &f64, angxyza: &[usize; 3], loca: &[f64; 3],
+                       expb: &f64, angxyzb: &[usize; 3], locb: &[f64; 3]) -> f64{
+    /* Gets the overlap integral between two gaussians using Hermite polynomials
+    From Joshua Goings: https://joshuagoings.com/2017/04/28/integrals/
+    */
+    let S1 = hermite_coefficients(&angxyza[0], &expa, &angxyzb[0], &expb, &(loca[0] - locb[0]), &0); // X
+    let S2 = hermite_coefficients(&angxyza[1], &expa, &angxyzb[1], &expb, &(loca[1] - locb[1]), &0); // Y
+    let S3 = hermite_coefficients(&angxyza[2], &expa, &angxyzb[2], &expb, &(loca[2] - locb[2]), &0); // Z
+    return sqrt(&(PI/(expa + expb))).powi(3) * S1 * S2 * S3; 
+}
+
+pub fn hermite_contracted_overlap(coeffa: &[f64], expa: &[f64], angxyza: &[usize; 3], loca: &[f64; 3], prim_numa: &usize,
+                                  coeffb: &[f64], expb: &[f64], angxyzb: &[usize; 3], locb: &[f64; 3], prim_numb: &usize) -> f64 {
+    /* Gets the overlap integral between two congracted basis functions using Hermite
+    polynomials.
+    From Joshua Goings: https://joshuagoings.com/2017/04/28/integrals/
+    
+    Gets the overlap between two contracted gaussians
+    */
+    let mut S = 0.0;
+
+    for i in 0..*prim_numa {
+        for j in  0..*prim_numb {
+            S += coeffa[i] * coeffb[j] * hermite_overlap(
+                &expa[i], &angxyza, &loca, &expb[j], &angxyzb, &locb 
+            );
+        }
+    }
+    return S;
+}
+
+pub fn get_cartesian_overlap(basis: &BasisSet, mol: &Geometry) -> Mat::<f64> {
+    /*
+    Builds and returns a square matrix with the overlap between all contracted gaussians
+    */    
+
+    let mut overlap = Mat::<f64>::zeros(basis.total_aos, basis.total_aos);
+
+    // This currently doesn't make use of the symmetric nature of the overlap matrix...
+    // TODO
+    let mut i = 0;
+    let mut j = 0;
+    for shelli in basis.shells.iter() {
+        let loci = mol.coords[shelli.ele_offset];
+        for shellj in basis.shells.iter() {
+            let locj = mol.coords[shellj.ele_offset];
+            for funci in shelli.functions.iter() {
+                let angxyzi = [funci.lx, funci.ly, funci.lz];
+                let coeffi = &basis.prim_coeffs[funci.coeff_offset..(funci.coeff_offset + shelli.prim_num)];
+                let expi = &basis.prim_exp[funci.exp_offset..(funci.exp_offset + shelli.prim_num)];
+                for funcj in shellj.functions.iter() {
+
+                    let angxyzj = [funcj.lx, funcj.ly, funcj.lz];
+                    let coeffj = &basis.prim_coeffs[funcj.coeff_offset..(funcj.coeff_offset + shellj.prim_num)];
+                    let expj = &basis.prim_exp[funcj.exp_offset..(funcj.exp_offset + shellj.prim_num)];
+                    let cur_overlap = hermite_contracted_overlap(&coeffi, &expi, &angxyzi, &loci, &shelli.prim_num,
+                                                                 &coeffj, &expj, &angxyzj, &locj, &shellj.prim_num);
+                    overlap[(i, j)] = cur_overlap;
+                    j += 1;
+                }
+
+                i += 1;
+            }
+        }
+    }
+
+    return overlap;
 }
 
 #[inline]

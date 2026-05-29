@@ -18,6 +18,8 @@ TODOs:
     - Have defaults for all options? Could be tied in with the input variable obj
 */
 
+use crate::scf::integral_solver;
+
 mod file_input;
 mod cli;
 mod molecule;
@@ -26,7 +28,8 @@ mod print;
 mod basis;
 mod parse_json;
 mod util;
-// mod context;
+
+use faer::Mat;
 
 fn main() {
 
@@ -42,7 +45,13 @@ fn main() {
     mol.print();
 
     let mut mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
-
     let mol_basis = mol_basis;
     // run the method of the input file
+
+    let overlap: Mat::<f64> = integral_solver::get_cartesian_overlap(&mol_basis, &mol);
+
+    let print_overlap: Vec<Vec<f64>> = (0..overlap.nrows())
+        .map(|r| (0..overlap.ncols()).map(|c| overlap[(r, c)]).collect()).collect();
+
+    println!("{:?}", print_overlap)
 }
