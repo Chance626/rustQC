@@ -31,6 +31,10 @@ pub struct BasisSet {
     pub prim_coeffs: Vec<f64>,
     pub prim_exp: Vec<f64>,
 
+    // These are the primitive and contractions normalization constants
+    pub prim_norms: Vec<f64>,
+    pub contract_norms: Vec<f64>,
+
     pub total_aos: usize
 }
 
@@ -62,6 +66,9 @@ pub struct ContractedFunction {
 
 impl BasisSet{
     pub fn normalize(&mut self) {
+        self.get_prim_norms();
+        self.get_contract_norms();
+
         //self.print_primtive_self_overlap("Primitive Self Overlap Before Normalization");
         //self.print_contracted_self_overlap("Contracted Self Overlap Before Normalization");
 
@@ -77,14 +84,13 @@ impl BasisSet{
     }
 
     pub fn normalize_primitives(&mut self) {
-        let prim_norms = self.get_prim_norms();
-
+        //println!("Primitive norms are: {:?}", prim_norms);
         for shell in self.shells.iter() {
             for primitive in shell.functions.iter() {
                 for i in 0..shell.prim_num {
                     let coeff_idx = primitive.coeff_offset + i;
                     let cur_coef = self.prim_coeffs[coeff_idx];
-                    let cur_norm = prim_norms[coeff_idx];
+                    let cur_norm = self.prim_norms[coeff_idx];
                     self.prim_coeffs[coeff_idx] = cur_coef * cur_norm;
                 }
             }
@@ -94,24 +100,24 @@ impl BasisSet{
     }
 
     pub fn normalize_contracted(&mut self) {
-        let contract_norms = self.get_contract_norms();
-
+        //println!("Contracted norms are: {:?}", contract_norms);
         for shell in self.shells.iter() {
             for primitive in shell.functions.iter() {
                 for i in 0..shell.prim_num {
                     let coeff_idx = primitive.coeff_offset + i;
                     let cur_coef = self.prim_coeffs[coeff_idx];
-                    let cur_norm = contract_norms[coeff_idx];
-                    self.prim_coeffs[coeff_idx] = cur_coef * cur_norm;   
+                    let cur_norm = self.contract_norms[coeff_idx];
+                    println!("{}",cur_norm);
+                    self.prim_coeffs[coeff_idx] = cur_coef * cur_norm;
                 }
             }
         }
     }
 
-    fn get_prim_norms(&self) -> Vec<f64> {
+    pub fn get_prim_norms(&mut self) {
         /* From "Fundamentals of Molecular Integrals Evaluation" by
                 Justin T. Fermann and Edward F. Valeev */
-        let mut norms: Vec<f64> = vec![0.0; self.total_aos];
+        let mut norms: Vec<f64> = vec![0.0; self.prim_coeffs.len()];
         for shell in self.shells.iter() {
             for primitive in shell.functions.iter() {
                 for i in 0..shell.prim_num {
@@ -124,19 +130,18 @@ impl BasisSet{
                         cur_exp,
                         cur_coef);
                     // ensures norms and coeffs have the same index
-                    norms[primitive.coeff_offset + i] = sqrt(&(1.0 / cur_overlap));
+                    self.prim_norms[primitive.coeff_offset + i] = sqrt(&(1.0 / cur_overlap));
                 }
             }
         }
-        let norms = norms;
-        return norms;
     }
 
-    fn get_contract_norms(&self) -> Vec<f64> {
+    pub fn get_contract_norms(&mut self) {
         /* From "Fundamentals of Molecular Integrals Evaluation" by
                 Justin T. Fermann and Edward F. Valeev */
 
-        let mut norms: Vec<f64> = vec![0.0; self.total_aos];
+        let mut norms: Vec<f64> = vec![0.0; self.prim_coeffs.len()];
+        //println!("The Contracted Norm Contracted_Int_Sum are:");
         for shell in self.shells.iter() {
             for primitive in shell.functions.iter() {
 
@@ -158,25 +163,13 @@ impl BasisSet{
                     }
                 }
 
-                let a = if (primitive.lx > 0) {2 * primitive.lx - 1} else {1};
-                let b = if (primitive.ly > 0) {2 * primitive.ly - 1} else {1};
-                let c = if (primitive.lz > 0) {2 * primitive.lz - 1} else {1};
-                let prefactor =  (sqrt(&PI.powi(3)) * 
-                    (a.double_factorial() * 
-                    b.double_factorial() * 
-                    c.double_factorial()) as f64) / 
-                    ((2 as i32).pow((primitive.lx + primitive.ly + primitive.lz) as u32) as f64);
-                
-                let prim_function_norm = sqrt(&(1.0 / (prefactor * contracted_int_sum)));
+                let prim_function_norm = 1.0 / sqrt(&(contracted_int_sum));
 
                 for i in 0..shell.prim_num {
-                    norms[primitive.coeff_offset + i] = prim_function_norm;
+                    self.prim_norms[primitive.coeff_offset + i] = prim_function_norm;
                 }
             }
         }
-
-        let norms = norms;
-        return norms;
     }
 
     pub fn print(&self, mol: &molecule::Geometry) {
@@ -234,7 +227,7 @@ impl BasisSet{
         }
     }
 
-    fn print_contracted_self_overlap(&self, title: &str) {
+    pub fn print_contracted_self_overlap(&self, title: &str) {
         println!("\n{}", title);
         let mut count = 1;
         for shell in self.shells.iter() {
@@ -256,17 +249,8 @@ impl BasisSet{
                             coeff2);
                     }
                 }
-                let a = if (primitive.lx > 0) {2 * primitive.lx - 1} else {1};
-                let b = if (primitive.ly > 0) {2 * primitive.ly - 1} else {1};
-                let c = if (primitive.lz > 0) {2 * primitive.lz - 1} else {1};
-                let prefactor =  (sqrt(&PI.powi(3)) * 
-                    (a.double_factorial() * 
-                    b.double_factorial() * 
-                    c.double_factorial()) as f64) / 
-                    ((2 as i32).pow((primitive.lx + primitive.ly + primitive.lz) as u32) as f64);
 
-                let contract_shell_overlap = prefactor * contracted_int_sum;
-                println!("({:^5}) {:<12.8}", count.to_string(), contract_shell_overlap.to_string());
+                println!("({:^5}) {:<12.8}", count.to_string(), contracted_int_sum.to_string());
                 count += 1;
             }
         }
@@ -320,7 +304,13 @@ pub fn build_mol_basis (geom: &molecule::Geometry, ele_basis_sets: &parse_json::
     let mut coef_offset = 0 ;
     let mut exp_offset = 0 ;
     let mut ao_offset = 0 ;
-    let mut mol_basis = BasisSet { shells: Vec::new(), prim_coeffs: Vec::new(), prim_exp: Vec::new(), total_aos: 0 };
+    let mut mol_basis = BasisSet { 
+        shells: Vec::new(),
+        prim_coeffs: Vec::new(),
+        prim_exp: Vec::new(),
+        prim_norms: Vec::new(),
+        contract_norms: Vec::new(),
+        total_aos: 0 };
     
     for i in 0..geom.natoms {
         let cur_ele: u8 = geom.eles[i];
@@ -382,6 +372,8 @@ pub fn build_mol_basis (geom: &molecule::Geometry, ele_basis_sets: &parse_json::
     }
 
     mol_basis.total_aos = ao_offset;
+    mol_basis.prim_norms = vec![1.0; mol_basis.prim_coeffs.len()];
+    mol_basis.contract_norms = vec![1.0; mol_basis.prim_coeffs.len()];
 
     let mol_basis = mol_basis;
     return mol_basis;
