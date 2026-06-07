@@ -49,21 +49,12 @@ fn main() {
 
 
     let overlap: Mat::<f64> = integral_solver::get_cartesian_overlap(&mol_basis, &mol);
-
+    print::mat_print::print_2D_mat(&overlap);
 }
 
 /*
 // was testing analytical vs. hermite overlaps
 pub fn testing_1(mol_basis: &BasisSet, mol: &molecule::Geometry, overlap: &Mat::<f64>) {
-    let print_overlap: Vec<Vec<f64>> = (0..overlap.nrows())
-        .map(|r| (0..overlap.ncols()).map(|c| overlap[(r, c)]).collect()).collect();
-
-    for row in &print_overlap {
-        for i in row {
-            print!("{:<0.2} ",i);
-        }
-        println!();
-    }
 
     mol_basis.print_contracted_self_overlap("Unnormalized Contracted Self_Overlap");
 
