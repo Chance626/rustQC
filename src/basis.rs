@@ -66,17 +66,14 @@ pub struct ContractedFunction {
 
 impl BasisSet{
     pub fn normalize(&mut self) {
-        self.get_prim_norms();
-        self.get_contract_norms();
-
         //self.print_primtive_self_overlap("Primitive Self Overlap Before Normalization");
         //self.print_contracted_self_overlap("Contracted Self Overlap Before Normalization");
-
+        self.get_prim_norms();
         self.normalize_primitives();
 
         //self.print_primtive_self_overlap("Primitive Self Overlap After Primitive Normalization");
         //self.print_contracted_self_overlap("Contracted Self Overlap After Primitive Normalization");
-
+        self.get_contract_norms();
         self.normalize_contracted();
 
         //self.print_primtive_self_overlap("Primitive Self Overlap After Contracted Normalization");
@@ -166,7 +163,7 @@ impl BasisSet{
                 let prim_function_norm = 1.0 / sqrt(&(contracted_int_sum));
 
                 for i in 0..shell.prim_num {
-                    self.prim_norms[primitive.coeff_offset + i] = prim_function_norm;
+                    self.contract_norms[primitive.coeff_offset + i] = prim_function_norm;
                 }
             }
         }

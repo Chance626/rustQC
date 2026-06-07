@@ -112,7 +112,6 @@ pub fn get_cartesian_overlap(basis: &BasisSet, mol: &Geometry) -> Mat::<f64> {
             let angxyzi = [funci.lx, funci.ly, funci.lz];
             let coeffi = &basis.prim_coeffs[funci.coeff_offset..(funci.coeff_offset + shelli.prim_num)];
             let expi = &basis.prim_exp[funci.exp_offset..(funci.exp_offset + shelli.prim_num)];
-            let i_contract_norm = basis.contract_norms[funci.coeff_offset];
             let mut j = 0;
             for shellj in basis.shells.iter() {
                 let locj = mol.coords[shellj.ele_offset];
@@ -122,7 +121,6 @@ pub fn get_cartesian_overlap(basis: &BasisSet, mol: &Geometry) -> Mat::<f64> {
                     let expj = &basis.prim_exp[funcj.exp_offset..(funcj.exp_offset + shellj.prim_num)];
                     let cur_overlap = hermite_contracted_overlap(&coeffi, &expi, &angxyzi, &loci, &shelli.prim_num,
                                                                  &coeffj, &expj, &angxyzj, &locj, &shellj.prim_num);
-                    let j_contract_norm = basis.contract_norms[funcj.coeff_offset];
                     overlap[(i, j)] += cur_overlap;
                     j += 1;
                 }
@@ -169,7 +167,7 @@ pub fn one_center_two_gaussian_integral(lx: usize, ly: usize, lz: usize,
         c.double_factorial()) as f64) / 
         ((2 as i32).pow((L) as u32) as f64);
 
-    return prefactor * ((coeff1 * coeff2) / ( sqrt(&(exp1 + exp2)).powi((L + 3) as i32)));
+    return prefactor * ((coeff1 * coeff2) / ( sqrt(&(exp1 + exp2)).powi((2 * L + 3) as i32)));
 }
 
 #[inline]

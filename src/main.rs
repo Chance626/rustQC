@@ -50,9 +50,10 @@ fn main() {
 
     let overlap: Mat::<f64> = integral_solver::get_cartesian_overlap(&mol_basis, &mol);
 
-    testing_1(&mol_basis, &mol, &overlap);
 }
 
+/*
+// was testing analytical vs. hermite overlaps
 pub fn testing_1(mol_basis: &BasisSet, mol: &molecule::Geometry, overlap: &Mat::<f64>) {
     let print_overlap: Vec<Vec<f64>> = (0..overlap.nrows())
         .map(|r| (0..overlap.ncols()).map(|c| overlap[(r, c)]).collect()).collect();
@@ -84,3 +85,5 @@ pub fn testing_1(mol_basis: &BasisSet, mol: &molecule::Geometry, overlap: &Mat::
     }
 
 }
+
+*/
