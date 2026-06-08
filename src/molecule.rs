@@ -90,7 +90,8 @@ pub struct Geometry {
     pub coords: Vec<[f64; 3]>,
     pub natoms: usize,
     pub chrg: i8,
-    pub mult: i8
+    pub mult: u8,
+    pub nelec: u32
 }
 
 impl Geometry {

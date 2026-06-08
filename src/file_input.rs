@@ -99,7 +99,7 @@ fn read_geometry(geom: &str) -> Result<molecule::Geometry, String> {
     let chrg_mult_line: Vec<&str> = geom_lines[0].split_whitespace().collect();
     let chrg: i8 = chrg_mult_line[0].parse()
     .map_err(|_| "Cannot read charge value")?;
-    let mult: i8 = chrg_mult_line[1].parse()
+    let mult: u8 = chrg_mult_line[1].parse()
     .map_err(|_| "Cannot read multiplicity value")?;
     let mut eles: Vec<u8> = vec![0; natoms];
     let mut coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0]; natoms];
@@ -119,12 +119,14 @@ fn read_geometry(geom: &str) -> Result<molecule::Geometry, String> {
         }
     }
 
+    // TODO: Make the number of electrons more robust and include a mult check
 
     Ok(molecule::Geometry{
-        eles: eles,
+        eles: eles.clone(),
         coords: coords,
         natoms: natoms,
         chrg: chrg,
-        mult: mult
+        mult: mult,
+        nelec: (eles.iter().sum::<u8>() as i8 - chrg) as u32
     })
 }

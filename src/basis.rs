@@ -104,7 +104,6 @@ impl BasisSet{
                     let coeff_idx = primitive.coeff_offset + i;
                     let cur_coef = self.prim_coeffs[coeff_idx];
                     let cur_norm = self.contract_norms[coeff_idx];
-                    println!("{}",cur_norm);
                     self.prim_coeffs[coeff_idx] = cur_coef * cur_norm;
                 }
             }

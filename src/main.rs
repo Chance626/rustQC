@@ -44,12 +44,9 @@ fn main() {
     
     mol.print();
 
-    let mut mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
-    let mol_basis = mol_basis;
-
+    let mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
 
     let overlap: Mat::<f64> = integral_solver::get_cartesian_overlap(&mol_basis, &mol);
-    print::mat_print::print_2D_mat(&overlap);
 }
 
 /*
