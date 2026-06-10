@@ -11,7 +11,7 @@ use std::{f64::consts::PI, fs, primitive};
 use crate::{molecule, parse_json};
 use std::cmp::{PartialEq, Eq};
 use faer::{self, traits::math_utils::sqrt};
-use crate::scf::integral_solver::{
+use crate::scf::overlap::{
     one_center_one_gaussian_integral,
     one_center_two_gaussian_integral};
 use factorial::DoubleFactorial;

@@ -10,4 +10,4 @@ Sets and Molecular Integrals"
 
 */
 
-pub mod integral_solver;
+pub mod overlap;
