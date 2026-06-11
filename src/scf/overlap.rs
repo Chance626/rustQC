@@ -3,7 +3,11 @@ Chance Brandt, The Ohio State Univeristy 2026
 
 These are the gaussian integral solvers used to calculate the overlap integrals.
 
-Let see how this goes lol
+T. Helgaker, P. Taylor, 1995 "Gaussian Basis Sets and Molecular Integrals"
+    - Hermite-recursive overlap of gaussians
+
+"Fundamentals of Molecular Integrals Evaluation" by Justin T. Fermann and Edward F. Valeev 
+    - Analytical solution to gaussian self overlap.
 */
 
 use std::f64::consts::PI;

@@ -47,5 +47,5 @@ fn main() {
 
     let overlap: Mat::<f64> = scf::overlap::get_cartesian_overlap(&mol_basis, &mol);
 
-
+    testing::testing_1(&mol_basis, &mol, &overlap);
 }

@@ -5,9 +5,14 @@ These are the methods and functions used to solve a HF scf, this include gaussia
 integral solvers, fock buliders and storage, and density builders and storage. These
 may be extended into DFT type solvers in the future.
 
-Current implementations are based on: T. Helgaker, P. Taylor, 1995 "Gaussian Basis
-Sets and Molecular Integrals"
+Current implementations are based on: 
 
+T. Helgaker, P. Taylor, 1995 "Gaussian Basis Sets and Molecular Integrals"
+    - Hermite-recursive overlap of gaussians, kinetic, nuclear, and eri matrices
+
+"Fundamentals of Molecular Integrals Evaluation" by Justin T. Fermann and Edward F. Valeev 
+    - Analytical solution to gaussian self overlap.
 */
 
 pub mod overlap;
+pub mod kinetic;
