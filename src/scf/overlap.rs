@@ -55,7 +55,6 @@ pub fn hermite_coefficients(anga: &usize, expa: &f64, angb: &usize, expb: &f64, 
         //return (1.0/(2.0*p)) * hermite_coefficients(&anga, &expa, &(angb - 1), &expb, &dist, &(nodes - 1));
         //return ((q * dist) / expb) * hermite_coefficients(&anga, &expa, &(angb - 1), &expb, &dist, &nodes);
         //return((nodes + 1) as f64) * hermite_coefficients(&anga, &expa, &(angb - 1), &expb, &dist, &(nodes + 1));
-
     }
 }
 
@@ -86,7 +85,6 @@ pub fn hermite_contracted_overlap(coeffa: &[f64], expa: &[f64], angxyza: &[usize
     Gets the overlap between two contracted gaussians
     */
     let mut S = 0.0;
-
 
     for i in 0..*prim_numa {
         for j in  0..*prim_numb {
@@ -121,8 +119,10 @@ pub fn get_cartesian_overlap(basis: &BasisSet, mol: &Geometry) -> Mat::<f64> {
                     let angxyzj = [funcj.lx, funcj.ly, funcj.lz];
                     let coeffj = &basis.prim_coeffs[funcj.coeff_offset..(funcj.coeff_offset + shellj.prim_num)];
                     let expj = &basis.prim_exp[funcj.exp_offset..(funcj.exp_offset + shellj.prim_num)];
-                    let cur_overlap = hermite_contracted_overlap(&coeffi, &expi, &angxyzi, &loci, &shelli.prim_num,
-                                                                 &coeffj, &expj, &angxyzj, &locj, &shellj.prim_num);
+                    let cur_overlap = hermite_contracted_overlap(
+                        &coeffi, &expi, &angxyzi, &loci, &shelli.prim_num,
+                        &coeffj, &expj, &angxyzj, &locj, &shellj.prim_num
+                    );
                     overlap[(i, j)] += cur_overlap;
                     j += 1;
                 }

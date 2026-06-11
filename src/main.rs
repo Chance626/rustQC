@@ -46,6 +46,9 @@ fn main() {
     let mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
 
     let overlap: Mat::<f64> = scf::overlap::get_cartesian_overlap(&mol_basis, &mol);
+    print::mat_print::print_2D_mat(&overlap);
 
-    testing::testing_1(&mol_basis, &mol, &overlap);
+    println!("");
+    let kinetic_mat: Mat::<f64> = scf::kinetic::get_kinetic_matrix(&mol_basis, &mol);
+    print::mat_print::print_2D_mat(&kinetic_mat);
 }
