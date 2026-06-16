@@ -149,7 +149,6 @@ pub fn one_center_one_gaussian_integral(lx: usize, ly: usize, lz: usize, exp: f6
     let integral = ((a.double_factorial() * b.double_factorial() * c.double_factorial()) as f64) * 
                     sqrt(&PI).powi(3) / 
                    ( (sqrt(&(2.0)) as f64).powi((L) as i32) * sqrt(&(2.0 * exp)).powi(3));
-    //return integral * coeff * coeff;
     return integral;
 }
 

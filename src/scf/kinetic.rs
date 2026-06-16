@@ -100,7 +100,7 @@ pub fn laplacian_one_electron_two_center(expa: &f64, angxyza: &[usize; 3], loca:
         // Decrement each angb by 2
         let mut dec_angxyzb = angxyzb.clone();
         dec_angxyzb[i] = dec_angxyzb[i].saturating_sub(2 as usize);
-        let term1 = (angxyzb[i] * (angxyzb[i] + 1)) as f64 * overlap::hermite_overlap(expa, angxyza, loca, expb, &dec_angxyzb, locb) ;
+        let term1 = (angxyzb[i] as f64 * (angxyzb[i] as f64 - 1.0)) * overlap::hermite_overlap(expa, angxyza, loca, expb, &dec_angxyzb, locb) ;
         
         // No changes in angular momentum
         let term2 = 2.0 * expb * (2 * angxyzb[i] + 1) as f64 * overlap::hermite_overlap(expa, angxyza, loca, expb, angxyzb, locb);

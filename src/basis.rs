@@ -119,13 +119,15 @@ impl BasisSet{
                 for i in 0..shell.prim_num {
                     let cur_coef = self.prim_coeffs[primitive.coeff_offset + i];
                     let cur_exp = self.prim_exp[primitive.exp_offset + i];
-                    let cur_overlap = one_center_one_gaussian_integral(
-                        primitive.lx,
-                        primitive.ly,
-                        primitive.lz,
-                        cur_exp,
-                        cur_coef);
-                    // ensures norms and coeffs have the same index
+                    let cur_overlap = one_center_two_gaussian_integral(
+                        primitive.lx, 
+                        primitive.ly, 
+                        primitive.lz, 
+                        cur_exp, 
+                        1.0, 
+                        cur_exp, 
+                        1.0);
+                                        
                     self.prim_norms[primitive.coeff_offset + i] = sqrt(&(1.0 / cur_overlap));
                 }
             }
