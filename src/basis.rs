@@ -145,6 +145,7 @@ impl BasisSet{
                 for i in 0..shell.prim_num {
                     let coeff1 = self.prim_coeffs[primitive.coeff_offset + i];
                     let exp1 = self.prim_exp[primitive.exp_offset + i];
+                    
                     for j in 0..shell.prim_num {
                         let coeff2 = self.prim_coeffs[primitive.coeff_offset + j];
                         let exp2 = self.prim_exp[primitive.exp_offset + j];
@@ -284,7 +285,19 @@ pub fn load_basis (mol: &molecule::Geometry, basis_name: &str) -> BasisSet {
     let mut mol_basis: BasisSet = build_mol_basis(&mol, &ele_basis_sets, BasisType::Cartesian);
 
     // Normalization - Does the primitive gaussians and then the contracted
-    mol_basis.normalize();
+    //mol_basis.normalize();
+
+    // Testing to see if 1.18 pops up anywhere.. {
+    mol_basis.get_prim_norms();
+    mol_basis.normalize_primitives();
+
+    println!("Before Contracted Normalization");
+    mol_basis.print(&mol);
+    mol_basis.get_contract_norms();
+    mol_basis.normalize_contracted();
+
+    println!("After Contracted Normalization");
+    // } End Testing 
     mol_basis.print(&mol);
 
     // Recasting for immutable
