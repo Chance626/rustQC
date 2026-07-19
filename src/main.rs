@@ -1,4 +1,3 @@
-
 /*
 Chance Brandt, The Ohio State 2026
 
@@ -27,7 +26,6 @@ mod basis;
 mod parse_json;
 mod util;
 mod testing;
-
 use faer::Mat;
 
 fn main() {
@@ -44,7 +42,16 @@ fn main() {
     mol.print();
 
     let mol_basis: basis::BasisSet = basis::load_basis(&mol, "STO3G.json");
+
     let overlap: Mat::<f64> = scf::overlap::get_cartesian_overlap(&mol_basis, &mol);
+    print::mat_print::print_2D_mat(&overlap);
+
+    println!("");
     let kinetic_mat: Mat::<f64> = scf::kinetic::get_kinetic_matrix(&mol_basis, &mol);
-    
+    print::mat_print::print_2D_mat(&kinetic_mat);
+
+    println!("");
+    let nuclear_mat: Mat::<f64> = scf::nuclear::get_nuclear_one_electron_matrix(&mol_basis, &mol);
+    print::mat_print::print_2D_mat(&nuclear_mat);
 }
+

@@ -16,3 +16,4 @@ T. Helgaker, P. Taylor, 1995 "Gaussian Basis Sets and Molecular Integrals"
 
 pub mod overlap;
 pub mod kinetic;
+pub mod nuclear;
